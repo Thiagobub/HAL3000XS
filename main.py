@@ -99,16 +99,27 @@ class Mesa_Termica():
     def __init__(self, start='Abre'):
         self.box = Termica(start=start)     # Caixa Termica
 
-    def take(self, obj):
+    def take(self, obj):    # Take da mesa térmica é diferente, já que apenas na mesa podemos por coisas na caixa térmica,
+                            # Então Hal da take bobinas na mesa, mas se a mesa tem a caixa, a mesa da take de bobinas da caixa, e o retorno do item vai para o robo
         if isinstance(obj, Termica) and isinstance(self.box, Termica):
             item = self.box
             self.box = None
             return item
+        elif isinstance(obj, Bobinas) and isinstance(self.box, Termica):
+            return self.box.take(obj)
+        elif isinstance(obj, Vacc) and isinstance(self.box, Termica):
+            return self.box.take(obj)
         return None
 
-    def place(self, obj):
+    def place(self, obj):   # Mesma analogia que take
         if isinstance(obj, Termica) and self.box == None:
             self.box = obj
+            return True
+        elif isinstance(obj, Bobinas) and isinstance(self.box, Termica):
+            self.box.place(obj)
+            return True
+        elif isinstance(obj, Vacc) and isinstance(self.box, Termica):
+            self.box.place(obj)
             return True
         return False
 
@@ -149,7 +160,6 @@ class Lixo():
     def place(self, obj):       # Executar place de vacinas no lixo, faz apenas que as vacinas vencidas sejam jogadas
         if isinstance(obj, Vacc):
             obj.vencidas = False
-            return True
         return False
 
 class HAL():
@@ -162,7 +172,10 @@ class HAL():
         self.pos = to
 
     def take(self, obj):
-        self.segurando = self.pos.take(obj)
+        if self.segurando == None:
+            item = self.pos.take(obj)
+            if item != None:    # Se a função retornou nada, quer dizer que não tem nada para pegar
+                self.segurando = item
 
     def place(self):
         '''
@@ -180,7 +193,7 @@ class HAL():
         x = 1
 
     def sort_vacc(self):
-        if self.pos == Geladeira():
+        if isinstance(self.pos, Geladeira):
             self.pos.sort()
 
 def abreSala():
@@ -223,23 +236,43 @@ print(r.pos)        # show us HAL's starting position
 r.go_to(places[0])  # send hal to freezer
 r.take(items[1])    # tell hal to take bobinas
 r.go_to(places[1])  # send hal to mesa de ambientação
-r.place()           # tell hal to place what he is holding where he is at           ############# PAREI AQUI ########### HAL CONTINUOU SEGURANDO #######
+r.place()           # tell hal to place what he is holding where he is at           
 
-r.take(items[1])    # tell hal to take vacinas      ### ele ta na mesa de ambientação, e lá não tem vacinas     #### Teste de erro
+r.take(items[0])    # tell hal to take vacinas      ### ele ta na mesa de ambientação, e lá não tem vacinas     #### Teste de erro
 r.take(items[1])    # tell hal to take bobinas      ### caso ele tente pegar algo em um lugar que não tem este algo, simplesmente não pegaria nada
 
 r.go_to(places[3])  # send hal to Mesa Termica
 r.place()           # tell hal to place bobnias no lugar atual
 r.place()           # tell hal to place what he's holding (nothing now) at the actual place                     #### Teste de erro
 
-r.sort_vacc()        # tell hal to sort vaccines     ### he's not at Geladeira                                   #### Teste de erro
+r.sort_vacc()       # tell hal to sort vaccines     ### he's not at Geladeira                                   #### Teste de erro
 r.go_to(places[2])  # send hal to Geladeira
-r.sort_vacc()        # tell hal to sort vaccines     ### now he's at Geladeira
+r.sort_vacc()       # tell hal to sort vaccines     ### now he's at Geladeira
+
+r.take(items[0])    # tell hal to take vacinas
+r.go_to(places[5])  # send hal to lixo
+r.place()           # tell hal to place vacinas (vencidas only) no lixo (deve continuar segurando obj vacinas, mas agr vom vencidas = False)
+
+r.go_to(places[3])  # send hal to mesa termica
+r.place()           # tell hal to place (vacinas na caixa termica que ta na mesa termica)
+
+r.take(items[1])    # tell hal to take bobinas
+r.take(items[0])    # tell hal to take vacinas  (but he's already holding something)
+r.place()           # tell hal to place bobinas in the box again
+
+r.take(items[2])    # tell hal to take Termica      ### Checking if the box on slef.segurando will be everything in there (vacinas e bobinas)
+
+print(r.segurando)  # algo no final pra eu checar o debuger antes do programa quitar
 
 
 
-
-
+'''
+######### A IMPLEMENTAR #########
+função fechaSala, e as varíaveis nas construtoras para setar o problema inicial de abreSala e fechaSala
+como representar e comparar se o estado atual do sistema representa o estado final que a gente quer? talvez uma função checa as variáveis necessárias
+função de perder temperatura com wait()
+checar função de limpar na lavadora, que será usada no segundo problema
+'''
 
 
 
