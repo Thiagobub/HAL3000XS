@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import math
+from pprint import pprint
+import json
 
 class Vacc():       # É criada na geladeira
     def __init__(self, start='Abre'):

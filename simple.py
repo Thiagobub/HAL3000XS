@@ -1,13 +1,20 @@
 from pprint import pprint
 import json
 # Ações
+VAI_PARA_LIXO = 'VAI_PARA_LIXO'
 VAI_PARA_FREEZER = 'VAI_PARA_FREEZER'
 VAI_PARA_MESA_AMB = 'VAI_PARA_MESA_AMB'
+VAI_PARA_MESA_TER = 'VAI_PARA_MESA_TER'
+VAI_PARA_GELADEIRA = 'VAI_PARA_GELADEIRA'
+VAI_PARA_LAVADORA = 'VAI_PARA_LAVADORA'
 PEGA = 'PEGA'
 COLOCA = 'COLOCA'
 ESPERA = 'ESPERA'
+ORDENA = 'ORDENA'
 
-ACOES = [VAI_PARA_FREEZER, VAI_PARA_MESA_AMB, PEGA, COLOCA, ESPERA]
+ACOES = [VAI_PARA_LIXO, VAI_PARA_FREEZER, VAI_PARA_MESA_AMB, 
+         VAI_PARA_MESA_TER, VAI_PARA_GELADEIRA, VAI_PARA_LAVADORA, 
+         PEGA, COLOCA, ESPERA, ORDENA]
 
 # Constantes
 COMBUSTIVEL_INICIAL = 10
@@ -17,7 +24,7 @@ PONTO = 1
 
 
 class HAL():
-    def __init__(self, definicao={'posicao': '', 'segurando': None, 'combustivel': COMBUSTIVEL_INICIAL}):
+    def __init__(self, definicao={'posicao': '', 'segurando': '', 'combustivel': COMBUSTIVEL_INICIAL}):
         self.posicao = definicao['posicao']
         self.segurando = definicao['segurando']
         self.combustivel = definicao['combustivel']
@@ -25,6 +32,7 @@ class HAL():
     def estado_a_partir_da_acao(self, acao, estado):
         proximo = vars(self).copy()
         proximo_estado_existe = False
+
         if acao == VAI_PARA_FREEZER and self.posicao != 'freezer':
             proximo['posicao'] = 'freezer'
             proximo['combustivel'] -= 1
@@ -33,9 +41,35 @@ class HAL():
             proximo['posicao'] = 'mesa_amb'
             proximo['combustivel'] -= 1
             proximo_estado_existe = True
+        elif acao == VAI_PARA_MESA_TER and self.posicao != 'mesa_ter':
+            proximo['posicao'] = 'mesa_ter'
+            proximo['combustivel'] -= 1
+            proximo_estado_existe = True
+        elif acao == VAI_PARA_GELADEIRA and self.posicao != 'geladeira':
+            proximo['posicao'] = 'geladeira'
+            proximo['combustivel'] -= 1
+            proximo_estado_existe = True
+        elif acao == VAI_PARA_LAVADORA and self.posicao != 'lavadora':
+            proximo['posicao'] = 'lavadora'
+            proximo['combustivel'] -= 1
+            proximo_estado_existe = True
+        elif acao == VAI_PARA_LIXO and self.posicao != 'lixo':
+            proximo['posicao'] = 'lixo'
+            proximo['combustivel'] -= 1
+            proximo_estado_existe = True
+
         elif acao == PEGA:
             if self.posicao == 'freezer' and estado.freezer.bobinas:
                 proximo['segurando'] = 'bobinas'
+                proximo_estado_existe = True
+            elif self.posicao == 'geladeira' and estado.geladeira.vacinas:
+                proximo['segurando'] = 'vacinas'
+                proximo_estado_existe = True
+            elif self.posicao == 'mesa_amb' and estado.mesa_amb.bobinas:
+                proximo['segurando'] = 'bobinas'
+                proximo_estado_existe = True
+            elif self.posicao == 'mesa_ter' and estado.mesa_ter.caixa:
+                proximo['segurando'] = 'caixa'
                 proximo_estado_existe = True
         elif acao == COLOCA:
             if self.posicao == 'mesa_amb' and self.segurando == 'bobinas':
@@ -53,6 +87,27 @@ class HAL():
             self.posicao if self.posicao else 'na posicao inicial', self.segurando if self.segurando else 'nada', self.combustivel
         ))
 
+class Vacinas:
+    def __init__(self, definicao={'temp': 5, 'vencidas': True, 'ordenadas': False}):
+        self.temp = definicao['temp']
+        self.vencidas = definicao['vencidas']
+        self.ordenadas = definicao['ordenadas']
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        proximo = vars(self).copy()
+        if acao == ORDENA and estado.hal.posicao == 'geladeira':
+            proximo[ordenadas] = 'True'
+        ### Conferir se tem mais coisas ###
+        return proximo
+
+    def log(self, estado):
+        if estado.hal.segurando == 'vacinas':
+            localizacao = 'hal'
+        #elif estado.geladeira.vacinas:
+        #    localizacao = 'geladeira'
+        #elif estado.caixa.vacinas:
+        #    localizacao = 'caixa'
+        print(f'As vacinas estão no(a) {localizacao} {self.vencidas} e {self.ordenadas}')
 
 class Bobinas():
     def __init__(self, definicao={'sujo': False, 'temp': TEMPERATURA_INICIAL}):
@@ -76,6 +131,31 @@ class Bobinas():
             'sujas' if self.sujo else 'limpas', localizacao, self.temp
         ))
 
+class Caixa():
+    def __init__(self, definicao={'sujo': False, 'bobinas': False, 'vacinas': True}):
+        self.sujo = definicao['sujo']
+        self.bobinas = definicao['bobinas']
+        self.vacinas = definicao['vacinas']
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        proximo = vars(self).copy()
+        if acao == PEGA and self.bobinas and estado.hal.posicao == 'mesa_ter' and estado.hal.segurando == '':
+            proximo['bobinas'] = False
+        elif acao == PEGA and self.vacinas and estado.hal.posicao == 'mesa_ter' and estado.hal.segurando == '':
+            proximo['vacinas'] = False
+        return proximo
+
+    def log(self, estado):
+        if estado.hal.segurando == 'caixa':
+            localizacao = 'hal'
+        elif estado.mesa_ter.caixa:
+            localizacao = 'mesa termica'
+        print('A caixa termica esta {} no(a) {}, {} e {}'.format(
+            'suja' if self.sujo else 'limpas',
+            localizacao,
+            'com bobinas' if self.bobinas else 'sem bobinas',
+            'com vacinas' if self.vacinas else 'sem vacinas'
+        ))
 
 class Freezer():
     def __init__(self, definicao={'bobinas': True}):
@@ -83,10 +163,19 @@ class Freezer():
 
     def estado_a_partir_da_acao(self, acao, estado):
         proximo = vars(self).copy()
-        if acao == PEGA and self.bobinas and estado.hal.posicao == 'freezer':
+        if acao == PEGA and self.bobinas and estado.hal.posicao == 'freezer' and estado.hal.segurando == '':
             proximo['bobinas'] = False
         return proximo
 
+class MesaTer():
+    def __init__(self, definicao={'caixa': True}):
+        self.caixa = definicao['caixa']
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        proximo = vars(self).copy()
+        if acao == PEGA and self.caixa and estado.hal.posicao == 'mesa_ter' and estado.hal.segurando == '':
+            proximo['caixa'] = False
+        return proximo
 
 class MesaAmb():
     def __init__(self, definicao={'bobinas': False}):
@@ -96,7 +185,33 @@ class MesaAmb():
         proximo = vars(self).copy()
         if acao == COLOCA and not self.bobinas and estado.hal.posicao == 'mesa_amb' and estado.hal.segurando == 'bobinas':
             proximo['bobinas'] = True
+        elif acao == PEGA and self.bobinas and estado.hal.posicao == 'mesa_amb' and estado.hal.segurando == '':
+            proximo['bobinas'] = False
         return proximo
+
+class Geladeira():
+    def __init__(self, definicao={'vacinas': True}):
+        self.vacinas = definicao['vacinas']
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        proximo = vars(self).copy()
+        if acao == PEGA and self.vacinas and estado.hal.posicao == 'geladeira' and estado.hal.segurando == '':
+            proximo['vacinas'] = False
+        return proximo
+
+class Lavadora():
+    def __init__(self, definicao={}):
+        x=1 # TODO
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        x=1 # TODO
+
+class Lixo():
+    def __init__(self, definicao={}):
+        x=1 # TODO
+
+    def estado_a_partir_da_acao(self, acao, estado):
+        x=1 # TODO
 
 
 def pontuacao_do_estado(estado, destino):
@@ -121,12 +236,23 @@ def pontuacao_do_estado(estado, destino):
 class Estado():
     def __init__(self, estado_base):
         self.hal = HAL(estado_base['hal']) if 'hal' in estado_base else HAL()
+        self.vacinas = Vacinas(
+            estado_base['vacinas']) if 'vacinas' in estado_base else Vacinas()
         self.bobinas = Bobinas(
             estado_base['bobinas']) if 'bobinas' in estado_base else Bobinas()
+        self.caixa = Caixa(
+            estado_base['caixa']) if 'caixa' in estado_base else Caixa()
         self.freezer = Freezer(
             estado_base['freezer']) if 'freezer' in estado_base else Freezer()
         self.mesa_amb = MesaAmb(
             estado_base['mesa_amb']) if 'mesa_amb' in estado_base else MesaAmb()
+        self.mesa_ter = MesaTer(
+            estado_base['mesa_ter']) if 'mesa_ter' in estado_base else MesaTer()
+        self.geladeira = Geladeira(
+            estado_base['vacinas']) if 'geladeira' in estado_base else Geladeira()
+        self.lixo = Lixo()
+        self.lavadora = Lavadora()
+        
 
     def estado_a_partir_da_acao(self, acao):
         hal = self.hal.estado_a_partir_da_acao(acao, self)
@@ -227,3 +353,12 @@ destino = {
 
 estado = Estado({})
 caminho = busca_caminho(estado, destino)
+
+
+
+'''
+####### TO DO #########
+Fazer o hal colocar bobinas e vacinas na caixa térmica quando estiver na mesa térmica
+
+
+'''
