@@ -1,4 +1,4 @@
-from simple import busca_caminho, Estado, printa_caminho, COMBUSTIVEL_INICIAL, TEMPERATURA_INICIAL
+from HAL import busca_caminho, Estado, printa_caminho, COMBUSTIVEL_INICIAL, TEMPERATURA_INICIAL
 
 estado_inicial_caso_abre = {
     'hal': {
@@ -78,11 +78,15 @@ destino_vacinas_fecha = {
 # printa_caminho(caminho)
 
 # Pega e coloca vacinas na caixa termica
-estado = Estado(estado_inicial_caso_abre)
-caminho = busca_caminho(estado, destino_vacinas_abre)
-printa_caminho(caminho)
+# estado = Estado(estado_inicial_caso_abre)
+# caminho = busca_caminho(estado, destino_vacinas_abre)
+# printa_caminho(caminho)
 
 # Pega e coloca bobinas na caixa termica
-# estado = Estado(estado_inicial_caso_fecha)
-# caminho = busca_caminho(estado, destino_fecha)
-# printa_caminho(caminho)
+estado = Estado(estado_inicial_caso_fecha)
+caminho = busca_caminho(estado, destino_fecha)
+printa_caminho(caminho)
+
+"""
+Resultados: foi alcançado o resultado esperado, ou seja, foi possível gerar uma sequência de ações que o robo poderia tomar para resolver o problema proposto, que é chegar em um estado final a partir de um estado inicial. Apesar que é possível que o robo não tome o caminho ótimo, devido a dificuldade já comentada da criação da função heurística, ele sempre conseguiu alcançar uma solução razoavel dado os problemas esquematizados.
+"""
