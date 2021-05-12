@@ -68,13 +68,21 @@ class HAL():
             elif self.posicao == 'mesa_amb' and estado.mesa_amb.bobinas:
                 proximo['segurando'] = 'bobinas'
                 proximo_estado_existe = True
-            elif self.posicao == 'mesa_ter' and estado.mesa_ter.caixa:
+            elif self.posicao == 'mesa_ter' and estado.mesa_ter.caixa:  ## Conflito, como sabe se pega caixa ou pega vacina ou bobina da caixa?
                 proximo['segurando'] = 'caixa'
                 proximo_estado_existe = True
+
         elif acao == COLOCA:
             if self.posicao == 'mesa_amb' and self.segurando == 'bobinas':
                 proximo['segurando'] = ''
                 proximo_estado_existe = True
+            elif self.posicao == 'mesa_ter' and self.segurando == 'bobinas':
+                proximo['segurando'] = ''
+                proximo_estado_existe = True
+            elif self.posicao == 'mesa_ter' and self.segurando == 'vacinas':
+                proximo['segurando'] = ''
+                proximo_estado_existe = True
+        
         elif acao == ESPERA:
             proximo_estado_existe = True
 
@@ -143,6 +151,11 @@ class Caixa():
             proximo['bobinas'] = False
         elif acao == PEGA and self.vacinas and estado.hal.posicao == 'mesa_ter' and estado.hal.segurando == '':
             proximo['vacinas'] = False
+        
+        elif acao == COLOCA and self.bobinas and estado.hal.posicao == 'mesa_ter':
+            proximo['bobinas'] = True
+        elif acao == COLOCA and self.vacinas and estado.hal.posicao == 'mesa_ter':
+            proximo['vacinas'] = True
         return proximo
 
     def log(self, estado):
@@ -259,18 +272,30 @@ class Estado():
         if hal:
             return Estado({
                 'hal': hal,
+                #'vacinas': self.bobinas.estado_a_partir_da_acao(acao, self),
                 'bobinas': self.bobinas.estado_a_partir_da_acao(acao, self),
+                'caixa'  : self.caixa.estado_a_partir_da_acao(acao, self),
                 'freezer': self.freezer.estado_a_partir_da_acao(acao, self),
                 'mesa_amb': self.mesa_amb.estado_a_partir_da_acao(acao, self),
+                'mesa_ter': self.mesa_ter.estado_a_partir_da_acao(acao, self),
+                #'geladeira': self.geladeira.estado_a_partir_da_acao(acao, self),
+                #'lavadora': self.lavadora.estado_a_partir_da_acao(acao, self),
+                #'lixo' : self.lixo.estado_a_partir_da_acao(acao, self)
             })
         return None
 
     def __repr__(self):
         return json.dumps({
             'hal': vars(self.hal),
+            'vacinas': vars(self.vacinas),
             'bobinas': vars(self.bobinas),
+            'caixa'  : vars(self.caixa),
             'freezer': vars(self.freezer),
-            'mesa_amb': vars(self.mesa_amb)
+            'mesa_amb': vars(self.mesa_amb),
+            'mesa_ter': vars(self.mesa_term),
+            'geladeira': vars(self.geladeira),
+            'lavadora': vars(self.geladeira),
+            'lixo': vars(self.lixo)
         })
 
     def eh_melhor_que(self, outro, destino):
